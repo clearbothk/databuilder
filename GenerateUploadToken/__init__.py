@@ -5,11 +5,13 @@ import datetime
 import json
 import azure.functions as func
 from azure.storage.blob import generate_container_sas, ContainerSasPermissions
+from azure.cosmosdb.table import Entity, TableService
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
     payload = req.get_json()
+    email: str = payload["email"]
     filename: str = payload["filename"]
     filename_extension = filename.split(".")[-1]
     file_name = f"{str(uuid.uuid4())}.{filename_extension}"
@@ -28,7 +30,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     sas_token = generate_container_sas(
         account_name, container_name, account_key=access_key, permission=permissions, start=now, expiry=end)
 
+    task = {'PartitionKey': email,
+            'RowKey': file_name}
+
+    table_service = TableService(connection_string=_connect_str)
+    table_service.insert_entity('uploads', task)
+
     print(sas_token)
+    print(email)
 
     responseData = json.dumps({
         "token": sas_token,
