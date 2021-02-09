@@ -1,6 +1,6 @@
 import os
 import datetime
-from datetime import timedelta
+from datetime import timedelta, timezone
 import logging
 
 import azure.functions as func
@@ -22,7 +22,7 @@ def main(mytimer: func.TimerRequest) -> None:
     for blob in labelling_container_client.list_blobs():
         labelling_blob_client = labelling_container_client.get_blob_client(
             blob)
-        if datetime.datetime.utcnow() - blob.creation_time >= timedelta(hours=1):
+        if datetime.datetime.now(timezone.utc) - blob.creation_time >= timedelta(hours=1):
             unlabelled_container_client = ContainerClient.from_connection_string(
                 _connect_str, "unlabelled")
             unlabelled_blob_client = unlabelled_container_client.get_blob_client(
