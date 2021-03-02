@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import io
 import csv
 import datetime
 import azure.functions as func
@@ -35,25 +36,25 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     total_uploads = 0
 
     email_mapping = {}
+    csvfile = io.StringIO()
+    for entry in data_generator:
+        total_uploads += 1
+        filename = entry["RowKey"]
+        timestamp = entry["Timestamp"]
+        if filename in unlabelled_blobs:
+            unlabelled_count += 1
+        elif filename in labelled_blobs:
+            labelled_count += 1
+        elif filename in labelling_blobs:
+            labelled_count += 1
+        else:
+            other_count += 1
+        current_email_count = email_mapping.get(entry["PartitionKey"], 0)
+        email_mapping[entry["PartitionKey"]] = current_email_count + 1
+        writer = csv.writer(csvfile)
+        writer.writerow(
+            [entry["PartitionKey"], timestamp.strftime("%c"), filename])
 
-    with open('report.csv', 'w') as csvfile:
-        for entry in data_generator:
-            total_uploads += 1
-            filename = entry["RowKey"]
-            timestamp = entry["Timestamp"]
-            if filename in unlabelled_blobs:
-                unlabelled_count += 1
-            elif filename in labelled_blobs:
-                labelled_count += 1
-            elif filename in labelling_blobs:
-                labelled_count += 1
-            else:
-                other_count += 1
-            current_email_count = email_mapping.get(entry["PartitionKey"], 0)
-            email_mapping[entry["PartitionKey"]] = current_email_count + 1
-            writer = csv.writer(csvfile)
-            writer.writerow(
-                [entry["PartitionKey"], timestamp.strftime("%c"), filename])
-    with open('report.csv', 'r') as report_file:
-        return report_file.read()
+    csvfile.seek(0)
+    return csvfile.read()
     # json.dumps({"uploads": total_uploads, "unlabelled": unlabelled_count, "labelled": labelled_count, "labelling": labelling_count, "others": other_count, "emails": email_mapping})
