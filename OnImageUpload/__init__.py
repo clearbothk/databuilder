@@ -15,7 +15,7 @@ def main(myblob: func.InputStream):
     # Make a blob client to put the image files
     _connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
     source_container_name = "uploads"
-    target_container_name = "unlabelled"
+    target_container_name = "review"
 
     if myblob.name.lower().endswith(tuple(acceptable_extensions)):
         blob_service_client = BlobServiceClient.from_connection_string(
